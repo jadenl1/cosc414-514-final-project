@@ -3,3 +3,5 @@
 *.a
 build/
 moss
+tests/run_tests
+.claude
