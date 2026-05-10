@@ -3,5 +3,8 @@
 *.a
 build/
 moss
+demo_sched
+demo_mem
+demo_sync
 tests/run_tests
 .claude

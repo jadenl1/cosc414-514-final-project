@@ -34,15 +34,26 @@ make clean
 
 ## Run
 
+**Part II unified CLI** (not yet implemented):
 ```bash
 ./moss
 ```
 
-Launches an interactive CLI session.
+**Part I individual subsystem demos:**
+```bash
+./demo_sched   # Subsystem A – Process Management & CPU Scheduling
+./demo_mem     # Subsystem B – Memory Management & Virtual Memory
+./demo_sync    # Subsystem C – Synchronization & Protection
+```
+
+Build all demos at once:
+```bash
+make demos
+```
 
 ---
 
-## CLI Commands
+## demo_sched Commands
 
 ```
 create_process <arrival> <burst> <priority>   create a new process
@@ -100,13 +111,16 @@ project-root/
 │   ├── mem.h         # Subsystem B public API
 │   └── sync.h        # Subsystem C public API
 ├── src/
-│   ├── main.cpp      # CLI entry point
+│   ├── main.cpp        # Part II unified CLI (placeholder)
+│   ├── demo_sched.cpp  # Part I demo – Subsystem A
+│   ├── demo_mem.cpp    # Part I demo – Subsystem B
+│   ├── demo_sync.cpp   # Part I demo – Subsystem C
 │   ├── sched/
-│   │   └── sched.cpp # Process management & CPU scheduling
+│   │   └── sched.cpp   # Process management & CPU scheduling
 │   ├── mem/
-│   │   └── mem.cpp   # Memory management & virtual memory
+│   │   └── mem.cpp     # Memory management & virtual memory
 │   └── sync/
-│       └── sync.cpp  # Synchronization & protection
+│       └── sync.cpp    # Synchronization & protection
 ├── tests/
 │   └── basic_tests.cpp
 ├── docs/

@@ -1,19 +1,37 @@
-CXX     = g++
+CXX      = g++
 CXXFLAGS = -Wall -Wextra -I./include -std=c++17
-TARGET  = moss
 
-SRCS    = $(shell find src -name '*.cpp')
-OBJS    = $(SRCS:.cpp=.o)
+# ── Unified binary (Part II) ──────────────────────────────────────────────────
 
-.PHONY: all clean
+SUBSYS_SRCS = src/sched/sched.cpp src/mem/mem.cpp src/sync/sync.cpp
+SUBSYS_OBJS = $(SUBSYS_SRCS:.cpp=.o)
+MOSS_OBJS   = src/main.o $(SUBSYS_OBJS)
 
-all: $(TARGET)
+# ── Demo binaries (Part I) ────────────────────────────────────────────────────
 
-$(TARGET): $(OBJS)
+DEMOS = demo_sched demo_mem demo_sync
+
+.PHONY: all demos clean
+
+all: moss
+
+demos: $(DEMOS)
+
+moss: $(MOSS_OBJS)
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+demo_sched: src/demo_sched.o src/sched/sched.o
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+demo_mem: src/demo_mem.o src/mem/mem.o
+	$(CXX) $(CXXFLAGS) -o $@ $^
+
+demo_sync: src/demo_sync.o src/sync/sync.o
 	$(CXX) $(CXXFLAGS) -o $@ $^
 
 %.o: %.cpp
 	$(CXX) $(CXXFLAGS) -c -o $@ $<
 
 clean:
-	rm -f $(OBJS) $(TARGET)
+	rm -f $(MOSS_OBJS) src/demo_sched.o src/demo_mem.o src/demo_sync.o \
+	      moss $(DEMOS)
