@@ -35,7 +35,7 @@ static void test_process_management() {
 
     sched_init();
 
-    // valid creation
+    //valid creation
     int pid0 = sched_create_process(0, 5, 1);
     int pid1 = sched_create_process(1, 3, 2);
     int pid2 = sched_create_process(2, 8, 0);
