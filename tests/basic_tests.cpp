@@ -1,5 +1,7 @@
 #include <iostream>
 #include "sched.h"
+#include "mem.h"
+#include "sync.h"
 
 static int passed = 0;
 static int failed = 0;
@@ -240,15 +242,259 @@ static void test_priority() {
     sched_destroy();
 }
 
+// ══════════════════════════════════════════════════════════════════════════════
+// Subsystem B – Memory Management
+// ══════════════════════════════════════════════════════════════════════════════
+
+static void test_mem_lifecycle() {
+    std::cout << "\n-- Mem Lifecycle --\n";
+
+    CHECK("mem init succeeds",          mem_init()    == 0);
+    CHECK("mem double init fails",      mem_init()    == -1);
+    CHECK("mem reset when initialized", mem_reset()   == 0);
+    CHECK("mem destroy succeeds",       mem_destroy() == 0);
+    CHECK("mem reset when not inited",  mem_reset()   == -3);
+    CHECK("mem destroy when not inited",mem_destroy() == -3);
+    CHECK("mem reinit after destroy",   mem_init()    == 0);
+    mem_destroy();
+}
+
+static void test_mem_access_fifo() {
+    std::cout << "\n-- Mem Access (FIFO) --\n";
+    mem_init();
+    mem_set_algorithm(MEM_FIFO);
+
+    // addr = page * 256  (page-aligned addresses for clarity)
+    // Frames start empty: 4 frames available
+
+    CHECK("page 1 first access = fault", mem_access(256)  == 1);
+    CHECK("page 1 second access = hit",  mem_access(256)  == 0);
+    CHECK("page 2 first access = fault", mem_access(512)  == 1);
+    CHECK("page 3 first access = fault", mem_access(768)  == 1);
+    CHECK("page 4 first access = fault", mem_access(1024) == 1);
+
+    // frames now full: [p1, p2, p3, p4]  fifo_order=[1,2,3,4]
+    CHECK("page 5 fault, evicts page 1", mem_access(1280) == 1);
+    CHECK("page 2 still in frames = hit",mem_access(512)  == 0);
+    CHECK("page 1 was evicted = fault",  mem_access(256)  == 1);
+
+    // invalid address
+    CHECK("negative addr rejected",      mem_access(-1)    == -1);
+    CHECK("addr > MAX rejected",         mem_access(99999) == -1);
+
+    // uninit guard
+    mem_destroy();
+    CHECK("access when not inited",      mem_access(256)   == -3);
+}
+
+static void test_mem_access_lru() {
+    std::cout << "\n-- Mem Access (LRU) --\n";
+    mem_init();
+    mem_set_algorithm(MEM_LRU);
+
+    // Load 4 pages to fill frames: lru_time = {1:1, 2:2, 3:3, 4:4}
+    mem_access(256);   // page 1
+    mem_access(512);   // page 2
+    mem_access(768);   // page 3
+    mem_access(1024);  // page 4
+
+    // Touch page 1 again → now MRU: lru_time = {1:5, 2:2, 3:3, 4:4}
+    CHECK("page 1 hit (refresh LRU)",    mem_access(256)  == 0);
+
+    // Access page 5 → must evict LRU = page 2 (time=2)
+    // lru_times now: {1:5, 3:3, 4:4, 5:6}
+    CHECK("page 5 fault, evicts page 2", mem_access(1280) == 1);
+
+    // Access page 2 → fault, evicts page 3 (now LRU with time=3)
+    // lru_times now: {1:5, 4:4, 5:6, 2:7}
+    CHECK("page 2 fault, evicts page 3", mem_access(512)  == 1);
+
+    // Access page 3 → fault, evicts page 4 (now LRU with time=4)
+    // lru_times now: {1:5, 5:6, 2:7, 3:8}
+    CHECK("page 3 fault, evicts page 4", mem_access(768)  == 1);
+
+    // Page 1 was refreshed earliest (time=5 when touched) and never evicted
+    CHECK("page 1 survived all evictions = hit", mem_access(256) == 0);
+
+    mem_destroy();
+}
+
+static void test_mem_stats() {
+    std::cout << "\n-- Mem Stats --\n";
+    mem_init();
+
+    int h = -1, f = -1;
+    CHECK("initial hits=0 faults=0",  mem_get_stats(&h, &f) == 0 && h == 0 && f == 0);
+
+    mem_access(256);  // fault
+    mem_access(256);  // hit
+    mem_access(512);  // fault
+    mem_get_stats(&h, &f);
+    CHECK("2 faults recorded",        f == 2);
+    CHECK("1 hit recorded",           h == 1);
+
+    // null guards
+    CHECK("null hits ptr rejected",   mem_get_stats(nullptr, &f) == -1);
+    CHECK("null faults ptr rejected", mem_get_stats(&h, nullptr) == -1);
+
+    // reset clears stats
+    mem_reset();
+    mem_get_stats(&h, &f);
+    CHECK("reset clears stats",       h == 0 && f == 0);
+
+    mem_destroy();
+}
+
+static void test_mem_frames_and_translation() {
+    std::cout << "\n-- Mem Frames & Translation --\n";
+    mem_init();
+
+    // All frames empty initially
+    int frames[MEM_DEFAULT_FRAMES];
+    int count = MEM_DEFAULT_FRAMES;
+    mem_get_frames(frames, &count);
+    CHECK("initial frame count = 4",   count == 4);
+    CHECK("frame 0 empty = -1",        frames[0] == -1);
+    CHECK("frame 3 empty = -1",        frames[3] == -1);
+
+    // Size-query mode (NULL buffer)
+    count = 0;
+    CHECK("frames size query returns 0", mem_get_frames(nullptr, &count) == 0);
+    CHECK("size query count = 4",        count == 4);
+
+    // Load page 1 → goes into frame 0
+    mem_access(256);  // page 1, offset 0
+    mem_get_frames(frames, &(count = MEM_DEFAULT_FRAMES));
+    CHECK("frame 0 holds page 1",  frames[0] == 1);
+    CHECK("frame 1 still empty",   frames[1] == -1);
+
+    // Translation: page 1 in frame 0
+    // logical 256 (p1 offset 0) → physical (0<<8)|0 = 0
+    int phys = -1;
+    CHECK("translate page 1 offset 0 = 0",   mem_logical_to_physical(256, &phys) == 0 && phys == 0);
+    CHECK("translate page 1 offset 1 = 1",   mem_logical_to_physical(257, &phys) == 0 && phys == 1);
+
+    // Page not loaded → -2
+    CHECK("translate unloaded page = -2",    mem_logical_to_physical(512, &phys) == -2);
+
+    // Null ptr → -1
+    CHECK("translate null ptr = -1",         mem_logical_to_physical(256, nullptr) == -1);
+
+    mem_destroy();
+}
+
+// ══════════════════════════════════════════════════════════════════════════════
+// Subsystem C – Synchronization
+// Note: sem_init is deprecated on macOS; these tests are designed for Ubuntu.
+// On macOS, sync_init will fail and tests will be skipped automatically.
+// ══════════════════════════════════════════════════════════════════════════════
+
+static bool sync_available = false;
+
+static void test_sync_lifecycle() {
+    std::cout << "\n-- Sync Lifecycle --\n";
+    SyncState state;
+
+    int rc = sync_init(&state);
+    if (rc != 0) {
+        std::cout << "  [SKIP] sync_init failed (rc=" << rc
+                  << ") — sem_init not supported on this platform\n";
+        sync_available = false;
+        return;
+    }
+    sync_available = true;
+
+    CHECK("sync init succeeds",          rc == 0);
+    CHECK("sync destroy succeeds",       sync_destroy(&state) == 0);
+    CHECK("null state init fails",       sync_init(nullptr)    == -1);
+    CHECK("null state destroy fails",    sync_destroy(nullptr) == -1);
+}
+
+static void test_sync_permissions() {
+    if (!sync_available) { std::cout << "\n-- Sync Permissions (SKIPPED) --\n"; return; }
+    std::cout << "\n-- Sync Permissions --\n";
+
+    SyncState state;
+    sync_init(&state);
+
+    // USER: read only
+    CHECK("USER READ allowed",    sync_check_permission(&state, ROLE_USER,   0, ACTION_READ)   == 0);
+    CHECK("USER WRITE denied",    sync_check_permission(&state, ROLE_USER,   0, ACTION_WRITE)  == -1);
+    CHECK("USER MANAGE denied",   sync_check_permission(&state, ROLE_USER,   0, ACTION_MANAGE) == -1);
+
+    // EDITOR: read + write
+    CHECK("EDITOR READ allowed",  sync_check_permission(&state, ROLE_EDITOR, 0, ACTION_READ)   == 0);
+    CHECK("EDITOR WRITE allowed", sync_check_permission(&state, ROLE_EDITOR, 0, ACTION_WRITE)  == 0);
+    CHECK("EDITOR MANAGE denied", sync_check_permission(&state, ROLE_EDITOR, 0, ACTION_MANAGE) == -1);
+
+    // ADMIN: all
+    CHECK("ADMIN READ allowed",   sync_check_permission(&state, ROLE_ADMIN,  0, ACTION_READ)   == 0);
+    CHECK("ADMIN WRITE allowed",  sync_check_permission(&state, ROLE_ADMIN,  0, ACTION_WRITE)  == 0);
+    CHECK("ADMIN MANAGE allowed", sync_check_permission(&state, ROLE_ADMIN,  0, ACTION_MANAGE) == 0);
+
+    // invalid inputs
+    CHECK("null state = -1",      sync_check_permission(nullptr, ROLE_USER, 0, ACTION_READ)    == -1);
+    CHECK("invalid role = -2",    sync_check_permission(&state, ROLE_COUNT, 0, ACTION_READ)    == -2);
+    CHECK("invalid action = -2",  sync_check_permission(&state, ROLE_USER,  0, ACTION_COUNT)   == -2);
+
+    sync_destroy(&state);
+}
+
+static void test_sync_readers_writers() {
+    if (!sync_available) { std::cout << "\n-- Sync Readers-Writers (SKIPPED) --\n"; return; }
+    std::cout << "\n-- Sync Readers-Writers --\n";
+
+    SyncState state;
+    sync_init(&state);
+
+    // USER can read
+    CHECK("begin_read USER ok",      sync_begin_read(&state, ROLE_USER, 0)   == 0);
+    CHECK("end_read ok",             sync_end_read(&state)                   == 0);
+
+    // EDITOR can write
+    CHECK("begin_write EDITOR ok",   sync_begin_write(&state, ROLE_EDITOR, 0) == 0);
+    CHECK("end_write ok",            sync_end_write(&state)                   == 0);
+
+    // USER cannot write (permission denied)
+    CHECK("begin_write USER denied", sync_begin_write(&state, ROLE_USER, 0)  == -1);
+
+    // end_read with no active readers
+    CHECK("end_read no readers = -3",sync_end_read(&state)                   == -3);
+
+    // end_write with no active writers
+    CHECK("end_write no writers = -3",sync_end_write(&state)                 == -3);
+
+    // null state guards
+    CHECK("begin_read null = -1",    sync_begin_read(nullptr, ROLE_USER, 0)  == -1);
+    CHECK("end_read null = -1",      sync_end_read(nullptr)                  == -1);
+    CHECK("begin_write null = -1",   sync_begin_write(nullptr, ROLE_EDITOR, 0) == -1);
+    CHECK("end_write null = -1",     sync_end_write(nullptr)                 == -1);
+
+    sync_destroy(&state);
+}
+
 // ── Main ──────────────────────────────────────────────────────────────────────
 
 int main() {
+    std::cout << "════ Subsystem A – Scheduling ════";
     test_lifecycle();
     test_process_management();
     test_accessors();
     test_fcfs();
     test_rr();
     test_priority();
+
+    std::cout << "\n════ Subsystem B – Memory ════";
+    test_mem_lifecycle();
+    test_mem_access_fifo();
+    test_mem_access_lru();
+    test_mem_stats();
+    test_mem_frames_and_translation();
+
+    std::cout << "\n════ Subsystem C – Sync ════";
+    test_sync_lifecycle();
+    test_sync_permissions();
+    test_sync_readers_writers();
 
     std::cout << "\n" << passed << " passed, " << failed << " failed.\n";
     return failed > 0 ? 1 : 0;

@@ -12,7 +12,7 @@ MOSS_OBJS   = src/main.o $(SUBSYS_OBJS)
 
 DEMOS = demo_sched demo_mem demo_sync
 
-.PHONY: all demos clean
+.PHONY: all demos test clean
 
 all: moss
 
@@ -20,6 +20,10 @@ demos: $(DEMOS)
 
 moss: $(MOSS_OBJS)
 	$(CXX) $(CXXFLAGS) -o $@ $^ $(LDFLAGS)
+
+test: $(SUBSYS_OBJS)
+	$(CXX) $(CXXFLAGS) -o tests/run_tests tests/basic_tests.cpp $(SUBSYS_OBJS) $(LDFLAGS)
+	./tests/run_tests
 
 demo_sched: src/demo_sched.o src/sched/sched.o
 	$(CXX) $(CXXFLAGS) -o $@ $^
