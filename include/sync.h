@@ -8,7 +8,7 @@
 extern "C" {
 #endif
 
-// ── Enums ─────────────────────────────────────────────────────────────────────
+//enums
 
 typedef enum {
     ROLE_USER,
@@ -24,7 +24,7 @@ typedef enum {
     ACTION_COUNT
 } sync_action_t;
 
-// ── Core data structure ───────────────────────────────────────────────────────
+//core datat structure
 
 typedef struct {
     int active_readers;
@@ -38,7 +38,7 @@ typedef struct {
     sem_t           resource_access;
 } SyncState;
 
-// ── API ───────────────────────────────────────────────────────────────────────
+//api
 //
 // Return codes: 0 = success, negative = error
 //   -1  invalid argument or permission denied
