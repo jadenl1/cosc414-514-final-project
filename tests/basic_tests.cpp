@@ -12,7 +12,7 @@ static int failed = 0;
         else       { std::cout << "[FAIL] " << label << "\n"; ++failed; } \
     } while(0)
 
-// ── Section 1: Lifecycle ──────────────────────────────────────────────────────
+//life cycle
 
 static void test_lifecycle() {
     std::cout << "\n-- Lifecycle --\n";
@@ -28,7 +28,7 @@ static void test_lifecycle() {
     sched_destroy();
 }
 
-// ── Section 2: Process management ────────────────────────────────────────────
+//process management
 
 static void test_process_management() {
     std::cout << "\n-- Process Management --\n";
@@ -59,7 +59,7 @@ static void test_process_management() {
     CHECK("terminate when not inited",sched_terminate_process(0)   == -3);
 }
 
-// ── Section 3a: Stat & Gantt accessors ───────────────────────────────────────
+//stat and gant accessors
 
 static void test_accessors() {
     std::cout << "\n-- Stat & Gantt Accessors --\n";
@@ -122,7 +122,7 @@ static void test_accessors() {
     sched_destroy();
 }
 
-// ── Section 3: Scheduling algorithms ─────────────────────────────────────────
+//scheduling algorithms
 
 static void test_fcfs() {
     std::cout << "\n-- FCFS --\n";
@@ -242,9 +242,7 @@ static void test_priority() {
     sched_destroy();
 }
 
-// ══════════════════════════════════════════════════════════════════════════════
 // Subsystem B – Memory Management
-// ══════════════════════════════════════════════════════════════════════════════
 
 static void test_mem_lifecycle() {
     std::cout << "\n-- Mem Lifecycle --\n";
@@ -264,8 +262,8 @@ static void test_mem_access_fifo() {
     mem_init();
     mem_set_algorithm(MEM_FIFO);
 
-    // addr = page * 256  (page-aligned addresses for clarity)
-    // Frames start empty: 4 frames available
+    //addr is page * 256
+    //4 frames available
 
     CHECK("page 1 first access = fault", mem_access(256)  == 1);
     CHECK("page 1 second access = hit",  mem_access(256)  == 0);
@@ -273,16 +271,16 @@ static void test_mem_access_fifo() {
     CHECK("page 3 first access = fault", mem_access(768)  == 1);
     CHECK("page 4 first access = fault", mem_access(1024) == 1);
 
-    // frames now full: [p1, p2, p3, p4]  fifo_order=[1,2,3,4]
+    //frames now full: [p1, p2, p3, p4]  fifo_order=[1,2,3,4]
     CHECK("page 5 fault, evicts page 1", mem_access(1280) == 1);
     CHECK("page 2 still in frames = hit",mem_access(512)  == 0);
     CHECK("page 1 was evicted = fault",  mem_access(256)  == 1);
 
-    // invalid address
+    //invalid address
     CHECK("negative addr rejected",      mem_access(-1)    == -1);
     CHECK("addr > MAX rejected",         mem_access(99999) == -1);
 
-    // uninit guard
+    //uninit guard
     mem_destroy();
     CHECK("access when not inited",      mem_access(256)   == -3);
 }
@@ -292,28 +290,28 @@ static void test_mem_access_lru() {
     mem_init();
     mem_set_algorithm(MEM_LRU);
 
-    // Load 4 pages to fill frames: lru_time = {1:1, 2:2, 3:3, 4:4}
-    mem_access(256);   // page 1
-    mem_access(512);   // page 2
-    mem_access(768);   // page 3
-    mem_access(1024);  // page 4
+    //Load 4 pages to fill frames
+    mem_access(256);   //page 1
+    mem_access(512);   //page 2
+    mem_access(768);   //page 3
+    mem_access(1024);  //page 4
 
-    // Touch page 1 again → now MRU: lru_time = {1:5, 2:2, 3:3, 4:4}
+    //Touch page 1 again → now MRU: lru_time = {1:5, 2:2, 3:3, 4:4}
     CHECK("page 1 hit (refresh LRU)",    mem_access(256)  == 0);
 
-    // Access page 5 → must evict LRU = page 2 (time=2)
-    // lru_times now: {1:5, 3:3, 4:4, 5:6}
+    //Access page 5 → must evict LRU = page 2 (time=2)
+    //lru_times now: {1:5, 3:3, 4:4, 5:6}
     CHECK("page 5 fault, evicts page 2", mem_access(1280) == 1);
 
-    // Access page 2 → fault, evicts page 3 (now LRU with time=3)
-    // lru_times now: {1:5, 4:4, 5:6, 2:7}
+    //Access page 2 → fault, evicts page 3 (now LRU with time=3)
+    //lru_times now: {1:5, 4:4, 5:6, 2:7}
     CHECK("page 2 fault, evicts page 3", mem_access(512)  == 1);
 
-    // Access page 3 → fault, evicts page 4 (now LRU with time=4)
-    // lru_times now: {1:5, 5:6, 2:7, 3:8}
+    //Access page 3 → fault, evicts page 4 (now LRU with time=4)
+    //lru_times now: {1:5, 5:6, 2:7, 3:8}
     CHECK("page 3 fault, evicts page 4", mem_access(768)  == 1);
 
-    // Page 1 was refreshed earliest (time=5 when touched) and never evicted
+    //Page 1 was refreshed earliest (time=5 when touched) and never evicted
     CHECK("page 1 survived all evictions = hit", mem_access(256) == 0);
 
     mem_destroy();
@@ -326,18 +324,18 @@ static void test_mem_stats() {
     int h = -1, f = -1;
     CHECK("initial hits=0 faults=0",  mem_get_stats(&h, &f) == 0 && h == 0 && f == 0);
 
-    mem_access(256);  // fault
-    mem_access(256);  // hit
-    mem_access(512);  // fault
+    mem_access(256);  //fault
+    mem_access(256);  //hit
+    mem_access(512);  //fault
     mem_get_stats(&h, &f);
     CHECK("2 faults recorded",        f == 2);
     CHECK("1 hit recorded",           h == 1);
 
-    // null guards
+    //null guards
     CHECK("null hits ptr rejected",   mem_get_stats(nullptr, &f) == -1);
     CHECK("null faults ptr rejected", mem_get_stats(&h, nullptr) == -1);
 
-    // reset clears stats
+    //reset stats
     mem_reset();
     mem_get_stats(&h, &f);
     CHECK("reset clears stats",       h == 0 && f == 0);
@@ -349,7 +347,7 @@ static void test_mem_frames_and_translation() {
     std::cout << "\n-- Mem Frames & Translation --\n";
     mem_init();
 
-    // All frames empty initially
+    //empty frames
     int frames[MEM_DEFAULT_FRAMES];
     int count = MEM_DEFAULT_FRAMES;
     mem_get_frames(frames, &count);
@@ -357,19 +355,19 @@ static void test_mem_frames_and_translation() {
     CHECK("frame 0 empty = -1",        frames[0] == -1);
     CHECK("frame 3 empty = -1",        frames[3] == -1);
 
-    // Size-query mode (NULL buffer)
+    //null buffer (size query)
     count = 0;
     CHECK("frames size query returns 0", mem_get_frames(nullptr, &count) == 0);
     CHECK("size query count = 4",        count == 4);
 
-    // Load page 1 → goes into frame 0
+    //Load page 1 into 0
     mem_access(256);  // page 1, offset 0
     mem_get_frames(frames, &(count = MEM_DEFAULT_FRAMES));
     CHECK("frame 0 holds page 1",  frames[0] == 1);
     CHECK("frame 1 still empty",   frames[1] == -1);
 
-    // Translation: page 1 in frame 0
-    // logical 256 (p1 offset 0) → physical (0<<8)|0 = 0
+    //Translation: page 1 in frame 0
+    //logical 256 (p1 offset 0) → physical (0<<8)|0 = 0
     int phys = -1;
     CHECK("translate page 1 offset 0 = 0",   mem_logical_to_physical(256, &phys) == 0 && phys == 0);
     CHECK("translate page 1 offset 1 = 1",   mem_logical_to_physical(257, &phys) == 0 && phys == 1);
