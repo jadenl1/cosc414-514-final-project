@@ -11,50 +11,44 @@ and synchronization — and observe their effects on performance and resource us
 | Member | Subsystem |
 |---|---|
 | Jaden Leonard | Subsystem A – Process Management & CPU Scheduling |
-| | Subsystem B – Memory Management & Virtual Memory |
-| | Subsystem C – Synchronization & Protection |
+| Amir Taylor | Subsystem B – Memory Management & Virtual Memory |
+| Uzoma Bruce | Subsystem C – Synchronization & Protection |
 
 ---
 
 ## Build
 
-Requires `g++` (version 11 or later) and `make`.
+Requires `g++` (version 11 or later) and `make`. Target platform: **Ubuntu 22.04 LTS**.
 
 ```bash
-make
-```
-
-Produces the `moss` binary in the project root. To clean build artifacts:
-
-```bash
-make clean
+make            # build unified moss binary (Part II placeholder)
+make demos      # build all three Part I demo binaries
+make test       # build and run full test suite
+make clean      # remove all build artifacts
 ```
 
 ---
 
 ## Run
 
-**Part II unified CLI** (not yet implemented):
-```bash
-./moss
-```
+**Part I — individual subsystem demos:**
 
-**Part I individual subsystem demos:**
 ```bash
 ./demo_sched   # Subsystem A – Process Management & CPU Scheduling
 ./demo_mem     # Subsystem B – Memory Management & Virtual Memory
 ./demo_sync    # Subsystem C – Synchronization & Protection
 ```
 
-Build all demos at once:
+**Part II unified CLI** (placeholder — full integration coming in Part II):
 ```bash
-make demos
+./moss
 ```
 
 ---
 
-## demo_sched Commands
+## Subsystem A – Scheduling (`./demo_sched`)
 
+### Commands
 ```
 create_process <arrival> <burst> <priority>   create a new process
 schedule <FCFS|RR|PRIORITY> [quantum]         set scheduling algorithm
@@ -66,8 +60,7 @@ help                                          show all commands
 exit                                          quit
 ```
 
-### Example Session
-
+### Example
 ```
 moss> schedule RR 2
   algorithm set to RR (quantum=2)
@@ -94,10 +87,78 @@ moss> run
 
 ---
 
-## Run Tests
+## Subsystem B – Memory (`./demo_mem`)
+
+### Commands
+```
+algorithm <FIFO|LRU>    set page replacement algorithm
+access <address>        access a logical address (0–65535)
+frames                  show current frame contents
+stats                   show hit/fault statistics
+reset                   clear frames and stats, keep algorithm
+demo                    run a preset page reference sequence
+help
+exit
+```
+
+### Example
+```
+mem> algorithm LRU
+  algorithm set to LRU
+mem> access 256
+  FAULT  page=1  offset=0  phys=0x0
+  Frames: [  1  --  --  -- ]
+mem> access 256
+  HIT    page=1  offset=0  phys=0x0
+  Frames: [  1  --  --  -- ]
+mem> stats
+  Hits: 1  Faults: 1  Hit rate: 50.0%
+```
+
+---
+
+## Subsystem C – Sync (`./demo_sync`)
+
+Runs a set of predefined scenarios demonstrating the readers-writers protocol
+and role-based access control. No interactive commands — just run and observe:
 
 ```bash
-g++ -Wall -Wextra -I./include -std=c++17 -o tests/run_tests tests/basic_tests.cpp src/sched/sched.cpp && ./tests/run_tests
+./demo_sync
+```
+
+### Example Output
+```
+-- Scenario 1: USER read --
+  init: OK (rc=0)
+  begin_read: OK (rc=0)
+  end_read: OK (rc=0)
+  destroy: OK (rc=0)
+
+-- Scenario 4: Permission checks --
+  USER   READ  : ALLOWED
+  USER   WRITE : DENIED
+  EDITOR WRITE : ALLOWED
+  ADMIN  MANAGE: ALLOWED
+```
+
+> **Note:** Subsystem C uses POSIX semaphores (`sem_init`) which are not supported
+> on macOS. Run on Ubuntu 22.04 for full functionality.
+
+---
+
+## Tests
+
+```bash
+make test
+```
+
+Runs all 113 tests across all three subsystems. Sync tests auto-skip on macOS
+(requires Ubuntu for `sem_init` support).
+
+```
+════ Subsystem A – Scheduling ════   73 tests
+════ Subsystem B – Memory ════       33 tests
+════ Subsystem C – Sync ════          7 tests (skipped on macOS)
 ```
 
 ---
@@ -107,26 +168,28 @@ g++ -Wall -Wextra -I./include -std=c++17 -o tests/run_tests tests/basic_tests.cp
 ```
 project-root/
 ├── include/
-│   ├── sched.h       # Subsystem A public API
-│   ├── mem.h         # Subsystem B public API
-│   └── sync.h        # Subsystem C public API
+│   ├── sched.h             # Subsystem A public API
+│   ├── mem.h               # Subsystem B public API
+│   └── sync.h              # Subsystem C public API
 ├── src/
-│   ├── main.cpp        # Part II unified CLI (placeholder)
-│   ├── demo_sched.cpp  # Part I demo – Subsystem A
-│   ├── demo_mem.cpp    # Part I demo – Subsystem B
-│   ├── demo_sync.cpp   # Part I demo – Subsystem C
+│   ├── main.cpp            # Part II unified CLI (placeholder)
+│   ├── demo_sched.cpp      # Part I demo – Subsystem A
+│   ├── demo_mem.cpp        # Part I demo – Subsystem B
+│   ├── demo_sync.cpp       # Part I demo – Subsystem C
 │   ├── sched/
-│   │   └── sched.cpp   # Process management & CPU scheduling
+│   │   └── sched.cpp       # Process management & CPU scheduling
 │   ├── mem/
-│   │   └── mem.cpp     # Memory management & virtual memory
+│   │   └── mem.cpp         # Memory management & virtual memory
 │   └── sync/
-│       └── sync.cpp    # Synchronization & protection
+│       └── sync.cpp        # Synchronization & protection
 ├── tests/
-│   └── basic_tests.cpp
+│   └── basic_tests.cpp     # 113 tests across all three subsystems
 ├── docs/
-│   ├── design.md     # Subsystem A design document & API reference
-│   ├── api.md        # Full system API reference (Part II)
-│   └── reflection.md # Individual reflection
+│   ├── design.md           # Subsystem A design document & API reference
+│   ├── SubsystemB_DesignDoc.pdf
+│   ├── SubsystemC_DesignDoc.docx
+│   ├── api.md              # Full system API reference (Part II)
+│   └── reflection.docx     # Subsystem A individual reflection
 ├── Makefile
 └── README.md
 ```
@@ -135,5 +198,10 @@ project-root/
 
 ## Documentation
 
-- **Subsystem A design & API reference:** [`docs/design.md`](docs/design.md)
-- **Project specification:** `Cosc 414_514 Semester Project – Mini Operating System Services Simulator.pdf`
+| Document | Description |
+|---|---|
+| [`docs/design.md`](docs/design.md) | Subsystem A design, algorithms, and API reference |
+| `docs/SubsystemB_DesignDoc.pdf` | Subsystem B design document |
+| `docs/SubsystemC_DesignDoc.docx` | Subsystem C design document |
+| `docs/reflection.docx` | Subsystem A individual reflection (MLA format) |
+| Project spec PDF | Full project requirements |
