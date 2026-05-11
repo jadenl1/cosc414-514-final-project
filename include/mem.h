@@ -5,36 +5,36 @@
 extern "C" {
 #endif
 
-// ── Configuration ─────────────────────────────────────────────────────────────
+//configuration
 
 #define MEM_DEFAULT_FRAMES  4
 #define MEM_PAGE_SIZE       256          // bytes per page (8-bit offset)
 #define MEM_ADDR_BITS       16           // logical address width
 #define MEM_MAX_ADDR        ((1 << MEM_ADDR_BITS) - 1)   // 65535
 
-// ── Enums ─────────────────────────────────────────────────────────────────────
+//enums
 
 typedef enum {
     MEM_FIFO,
     MEM_LRU
 } MemAlgo;
 
-// ── API ───────────────────────────────────────────────────────────────────────
+// api
 //
 // Return codes: 0 = success, negative = error
 //   -1  generic error / invalid argument
 //   -2  not found
 //   -3  subsystem not initialized
 
-// Lifecycle
+//Lifecycle
 int mem_init(void);
 int mem_destroy(void);
 int mem_reset(void);    // clears frames and stats; keeps algorithm
 
-// Configuration
+//Configuration
 int mem_set_algorithm(MemAlgo algo);
 
-// Access
+//Access
 // Returns: 0 = hit, 1 = page fault, -1 = invalid address, -3 = not initialized
 int mem_access(int logical_addr);
 
