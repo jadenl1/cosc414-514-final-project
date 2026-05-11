@@ -1,7 +1,7 @@
 # MOSS Subsystem Interface Specification
 
 **Course:** COSC 414/514 – Operating Systems
-**Team:** Jaden Leonard, Amir Taylor, Uzoma Bruce
+**Team:** Jaden Leonard, Amir Taylor, Fletcher Baccus, Uzoma Bruce
 **Project:** Mini Operating System Services Simulator (MOSS)
 
 ---

@@ -12,6 +12,7 @@ and synchronization — and observe their effects on performance and resource us
 |---|---|
 | Jaden Leonard | Subsystem A – Process Management & CPU Scheduling |
 | Amir Taylor | Subsystem B – Memory Management & Virtual Memory |
+| Fletcher Baccus | Subsystem B – Memory Management & Virtual Memory |
 | Uzoma Bruce | Subsystem C – Synchronization & Protection |
 
 ---
