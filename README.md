@@ -120,30 +120,43 @@ mem> stats
 
 ## Subsystem C – Sync (`./demo_sync`)
 
-Runs a set of predefined scenarios demonstrating the readers-writers protocol
-and role-based access control. No interactive commands — just run and observe:
-
-```bash
-./demo_sync
+### Commands
+```
+init                                    initialize sync state
+read   <USER|EDITOR|ADMIN>             attempt a read  (begin + end)
+write  <USER|EDITOR|ADMIN>             attempt a write (begin + end)
+check  <USER|EDITOR|ADMIN> <READ|WRITE|MANAGE>  permission check only
+permissions                            show full permission matrix
+status                                 show active readers/writers
+demo                                   run preset scenarios
+reset                                  destroy and reinitialize
+help
+exit
 ```
 
-### Example Output
+### Example
 ```
--- Scenario 1: USER read --
-  init: OK (rc=0)
-  begin_read: OK (rc=0)
-  end_read: OK (rc=0)
-  destroy: OK (rc=0)
-
--- Scenario 4: Permission checks --
-  USER   READ  : ALLOWED
-  USER   WRITE : DENIED
-  EDITOR WRITE : ALLOWED
-  ADMIN  MANAGE: ALLOWED
+sync> init
+  sync state initialized
+sync> check USER WRITE
+  USER WRITE: DENIED
+sync> write EDITOR
+  begin_write (EDITOR): OK
+  end_write: OK
+sync> write USER
+  begin_write (USER): DENIED (rc=-1)
+sync> permissions
+  Role      READ    WRITE   MANAGE
+  ------------------------------------
+  USER      YES     no      no
+  EDITOR    YES     YES     no
+  ADMIN     YES     YES     YES
+sync> demo
+  [runs 4 preset scenarios]
 ```
 
-> **Note:** Subsystem C uses POSIX semaphores (`sem_init`) which are not supported
-> on macOS. Run on Ubuntu 22.04 for full functionality.
+> **Note:** Subsystem C uses POSIX semaphores (`sem_init`) which require
+> **Ubuntu 22.04**. Not supported on macOS.
 
 ---
 
