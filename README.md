@@ -40,9 +40,28 @@ make clean      # remove all build artifacts
 ./demo_sync    # Subsystem C – Synchronization & Protection
 ```
 
-**Part II unified CLI** (placeholder — full integration coming in Part II):
+**Part II unified CLI:**
 ```bash
 ./moss
+```
+
+All three subsystems are available from a single prompt using a `subsystem command` prefix:
+
+```
+moss> sched create_process <arrival> <burst> <priority>
+moss> sched schedule <FCFS|RR|PRIORITY> [quantum]
+moss> sched run | gantt | stats | reset
+
+moss> mem algorithm <FIFO|LRU>
+moss> mem access <address> | frames | stats | reset | demo
+
+moss> sync read | write  <USER|EDITOR|ADMIN>
+moss> sync check <USER|EDITOR|ADMIN> <READ|WRITE|MANAGE>
+moss> sync permissions | status | reset | demo
+
+moss> demo     # end-to-end vertical slice through all three subsystems
+moss> help     # full command reference
+moss> exit
 ```
 
 ---

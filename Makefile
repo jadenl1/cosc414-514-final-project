@@ -39,4 +39,4 @@ demo_sync: src/demo_sync.o src/sync/sync.o
 
 clean:
 	rm -f $(MOSS_OBJS) src/demo_sched.o src/demo_mem.o src/demo_sync.o \
-	      moss $(DEMOS)
+	      moss $(DEMOS) tests/run_tests
