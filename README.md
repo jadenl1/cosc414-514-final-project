@@ -225,6 +225,7 @@ project-root/
 | `docs/design-docs/SubsystemB_DesignDoc.pdf` | Subsystem B design document |
 | `docs/design-docs/SubsystemC_DesignDoc.docx` | Subsystem C design document |
 | [`docs/api.md`](docs/api.md) | Full system API reference |
+| [`docs/vertical_slice.md`](docs/vertical_slice.md) | Vertical slice walkthrough, integration points, and known limitations |
 | `docs/reflections/` | Individual reflections (one per team member) |
 | `docs/cross-reviews/` | Peer cross-reviews |
 | Project spec PDF | Full project requirements |
