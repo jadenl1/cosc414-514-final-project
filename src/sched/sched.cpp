@@ -230,6 +230,7 @@ static void run_rr(void) {
     writeback(procs); // push local changes back to the global process table
 }
 
+// PRIORITY
 static void run_priority(void) {
     std::vector<PCB> procs;
     // Find all processes that are not terminated
