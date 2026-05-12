@@ -199,11 +199,18 @@ project-root/
 ├── tests/
 │   └── basic_tests.cpp     # 113 tests across all three subsystems
 ├── docs/
-│   ├── design.md           # Subsystem A design document & API reference
-│   ├── SubsystemB_DesignDoc.pdf
-│   ├── SubsystemC_DesignDoc.docx
-│   ├── api.md              # Full system API reference (Part II)
-│   └── reflection.docx     # Subsystem A individual reflection
+│   ├── api.md              # Full system API reference
+│   ├── design-docs/
+│   │   ├── SubsystemA-Design.md      # Subsystem A design document
+│   │   ├── SubsystemB_DesignDoc.pdf  # Subsystem B design document
+│   │   └── SubsystemC_DesignDoc.docx # Subsystem C design document
+│   ├── reflections/
+│   │   ├── Reflection-SubsystemA-JadenLeonard.docx.pdf
+│   │   ├── Amir Reflection SS B.pdf
+│   │   └── Reflection of Sub SYstem B.pdf
+│   └── cross-reviews/
+│       ├── Jaden Leonard Cross-Review of Subsystem C.pdf
+│       └── Subsystem A Cross Review.pdf
 ├── Makefile
 └── README.md
 ```
@@ -214,8 +221,10 @@ project-root/
 
 | Document | Description |
 |---|---|
-| [`docs/design.md`](docs/design.md) | Subsystem A design, algorithms, and API reference |
-| `docs/SubsystemB_DesignDoc.pdf` | Subsystem B design document |
-| `docs/SubsystemC_DesignDoc.docx` | Subsystem C design document |
-| `docs/reflection.docx` | Subsystem A individual reflection (MLA format) |
+| [`docs/design-docs/SubsystemA-Design.md`](docs/design-docs/SubsystemA-Design.md) | Subsystem A design, algorithms, and API reference |
+| `docs/design-docs/SubsystemB_DesignDoc.pdf` | Subsystem B design document |
+| `docs/design-docs/SubsystemC_DesignDoc.docx` | Subsystem C design document |
+| [`docs/api.md`](docs/api.md) | Full system API reference |
+| `docs/reflections/` | Individual reflections (one per team member) |
+| `docs/cross-reviews/` | Peer cross-reviews |
 | Project spec PDF | Full project requirements |
