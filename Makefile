@@ -1,5 +1,5 @@
 CXX      = g++
-CXXFLAGS = -Wall -Wextra -I./include -std=c++17
+CXXFLAGS = -Wall -Wextra -iquote ./include -std=c++17
 LDFLAGS  = -lpthread
 
 # ── Unified binary (Part II) ──────────────────────────────────────────────────
